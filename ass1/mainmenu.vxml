@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vxml version = "2.1">
+<form>
+    <field name="language">
+        <!-- read in English -->
+        <prompt xml:lang="en-US">
+            For English, press 1.
+        </prompt>
+        <!-- read in French -->
+        <prompt xml:lang="fr-FR">
+            Pour le français, appuyez sur 2.
+        </prompt>
+        <!-- read in local language using pre-recorded audio -->
+        <prompt>
+           <audio src="wavs/local_language.wav"/>
+        </prompt>
+        <grammar>[dtmf-1 dtmf-2 dtmf-3]</grammar>
+        <filled>
+            <if cond="language=='1'">
+                <goto next="tts-en.vxml"/>
+                <elseif cond="language=='2'"/>
+                <goto next="tts-fr.vxml"/>
+                <elseif cond="language=='3'"/>
+                <goto next="local-generic.vxml"/>
+            </if>
+        </filled>
+    </field>
+</form>
+</vxml>

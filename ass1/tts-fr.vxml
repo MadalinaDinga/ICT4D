@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vxml version = "2.1" xml:lang="fr-fr">
+
+    <!-- event for incident selection-->
+    <catch event="type_selected">
+        <prompt>
+            You chose <value expr="_message"/>.
+            We would now want to hear more details. Please provide answers to the following questions regarding the <value expr="_message"/>
+        </prompt>
+        <log> You chose <value expr="_message"/> </log>
+        <assign name="report_type" expr="_message"/>
+        <goto next="#report_details"/>
+    </catch>
+
+    <!-- end event-->
+    <catch event="end">
+        <log> End of session </log>
+        <disconnect/>
+    </catch>
+
+    <form id="login">
+        <field name="code">
+            <!-- TODO: The code will be checked on the server-side, but we use a grammar with codes for now -->
+            <grammar mode="dtmf">
+                [123 000 111]
+            </grammar>
+            <prompt> Please type your identity code. </prompt>
+            <noinput>
+                <reprompt/>
+            </noinput>
+            <nomatch>
+                <audio> Sorry, there is no user associated to this code <value expr="code"/>. Please try again. </audio>
+                <break time="1000"/>
+                <reprompt/>
+            </nomatch>
+            <nomatch count="3">
+                <audio> Sorry access is denied. </audio>
+                <exit/>
+                <reprompt/>
+            </nomatch>
+            <filled>
+                <!-- TODO: To be replaced by the name of the user (requested from server-side) -->
+                <log> You entered <value expr="code"/></log>
+                <assign name="userid" expr="code"/>
+            </filled>
+        </field>
+
+        <!-- "filled" event for form -->
+        <filled>
+            <prompt>Welcome to VOSSIA, <value expr = "userid" /> </prompt>
+            <goto next="#menu_report"/>
+        </filled>
+    </form>
+
+    <!-- report type menu (incident/initiative) -->
+    <menu id="menu_report" scope="dialog" dtmf="true">
+        <prompt>
+            <break time="1000"/>
+            You are now inside the report creation menu.
+            Press 1 if you want to report an incident or 2 if you want to report an initiative.
+        </prompt>
+
+        <!-- product list-->
+        <prompt>
+            <enumerate>
+                <break time="1000"/>
+                For <value expr="_prompt"/>, Press <value expr="_dtmf"/>
+            </enumerate>
+        </prompt>
+
+        <choice event="type_selected" dtmf="1" message="Incident">Incident</choice>
+        <choice event="type_selected" dtmf="2" message="Initiative">Initiative</choice>
+    </menu>
+
+    <!-- report form-->
+    <form id="report_details">
+        <!--  Report Title -->
+        <record name="record_title" beep="true" maxtime="10s" finalsilence="4000ms" dtmfterm="true" type="audio/wav">
+            <prompt> At the tone, please say a title of the <value expr="report_type"/>. </prompt>
+            <noinput> I didn't hear anything, please try again. </noinput>
+        </record>
+        <block>
+            <prompt>Here is what you recorded <value expr="record_title"/></prompt>
+            <assign name="title" expr="record_title"/>
+        </block>
+
+        <!--  Report Description -->
+        <record name="record_description" beep="true" maxtime="300s" finalsilence="4000ms" dtmfterm="true" type="audio/wav">
+            <prompt> At the tone, please say a description of the <value expr="report_type"/>. The recording can be at most 5 minutes long.</prompt>
+            <noinput> I didn't hear anything, please try again. </noinput>
+        </record>
+        <block>
+            <prompt>Here is what you recorded <value expr="record_description"/></prompt>
+            <assign name="description" expr="record_description"/>
+        </block>
+
+        <!--  Submission date -->
+        <var name="date_today"/>
+        <block>
+            <script> var d = new Date(); date_today = d.toUTCString(); </script>
+            <assign name="submission_date" expr="date_today"/>
+            <log> Date today <value expr="submission_date"/></log>
+        </block>
+
+        <!--  Country -->
+        <field name="report_country">
+            <prompt>
+                Choose the country where the <value expr = "report_type" /> took place.
+                <enumerate>
+                    For <value expr="_prompt"/>, press <value expr="_dtmf"/> or say <value expr="_prompt"/>.
+                </enumerate>
+            </prompt>
+            <option dtmf="1" value="Mali"> Mali </option>
+            <option dtmf="2" value="Congo"> Congo </option>
+            <option dtmf="3" value="South Africa"> South Africa </option>
+            <filled>
+                <assign name="country" expr="report_country"/>
+                <prompt> You chose <value expr="country"/>. </prompt>
+            </filled>
+        </field>
+
+        <!-- "filled" event for form -->
+        <filled>
+            <goto next="#confirm"/>
+        </filled>
+
+    </form>
+
+    <!-- confirmation form-->
+    <menu id="confirm" scope="dialog" dtmf="true">
+        <prompt>
+            <break time="1000"/>
+            You have created a report for an <value expr="report_type"/> in <value expr="country"/>.
+            <break time="1000"/>
+            To Confirm, Press 1
+            <break time="1000"/>
+            To Re-enter your report, Press 2
+        </prompt>
+
+        <!-- listed choices are enumerated in order, 1 for save, 2 for menu_report-->
+        <choice next="#save"></choice> <!--go to "save" form-->
+        <choice next="#menu_report"></choice> <!--back to report menu-->
+    </menu>
+
+    <!-- call backend with data-->
+    <form id="save">
+        <block>
+            <!--   <data name="phpsave" src="TODO" namelist="userid type title description country submission_date" method="post"/>-->
+            <prompt>Save report</prompt>
+            <goto next="#last"/>
+        </block>
+    </form>
+
+    <!-- finish form-->
+    <menu id="last" scope="dialog" dtmf="true">
+        <prompt>
+            Your Report has been posted online
+            <break time="1000"/>
+            To Enter another report, Press 1
+            <break time="1000"/>
+            To Finish, Press 2
+        </prompt>
+        <choice next="#menu_report"></choice>
+        <choice event="end"></choice>
+    </menu>
+
+</vxml>

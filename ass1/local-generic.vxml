@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vxml version = "2.1">
+    <form>
+        <block>
+            <prompt>
+                <!-- Welcome to the local language version of VOSSIA. This version uses pre-recorded messages (to demonstrate the use of recorded voice prompts).-->
+                <audio src="wavs/welcome.wav"/>
+            </prompt>
+        </block>
+    </form>
+</vxml>
